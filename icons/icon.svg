@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c111d"/>
+      <stop offset="50%" stop-color="#080c14"/>
+      <stop offset="100%" stop-color="#04060a"/>
+    </linearGradient>
+
+    <!-- Outer Squircle Border Gradient -->
+    <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#1e293b" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.5"/>
+    </linearGradient>
+
+    <!-- Back Card Gradients -->
+    <linearGradient id="backCardFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="backCardBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+
+    <!-- Front Card Gradients -->
+    <linearGradient id="frontCardFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111c33" stop-opacity="0.92"/>
+      <stop offset="50%" stop-color="#0d1527" stop-opacity="0.96"/>
+      <stop offset="100%" stop-color="#080e1a" stop-opacity="0.98"/>
+    </linearGradient>
+    <linearGradient id="frontCardBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="60%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+
+    <!-- Glowing Sync Bridge Gradient -->
+    <linearGradient id="syncGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#818cf8"/>
+    </linearGradient>
+
+    <!-- Specular Sheen for Glass Cards -->
+    <linearGradient id="sheenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Drop Shadows -->
+    <filter id="cardShadow" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#38bdf8" flood-opacity="0.65"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle App Container -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bgGrad)" stroke="url(#borderGrad)" stroke-width="3"/>
+
+  <!-- Back Card (Source Session) -->
+  <g filter="url(#cardShadow)">
+    <rect x="112" y="96" width="208" height="276" rx="36" fill="url(#backCardFill)" stroke="url(#backCardBorder)" stroke-width="2.5"/>
+    <!-- Back Card Inner Lines -->
+    <rect x="144" y="132" width="72" height="10" rx="5" fill="#334155"/>
+    <rect x="144" y="156" width="112" height="6" rx="3" fill="#1e293b"/>
+    <rect x="144" y="172" width="88" height="6" rx="3" fill="#1e293b"/>
+  </g>
+
+  <!-- Front Card (Cloned Session) -->
+  <g filter="url(#cardShadow)">
+    <rect x="192" y="148" width="208" height="276" rx="36" fill="url(#frontCardFill)" stroke="url(#frontCardBorder)" stroke-width="3"/>
+    <!-- Glass Sheen Overlay -->
+    <rect x="192" y="148" width="208" height="276" rx="36" fill="url(#sheenGrad)"/>
+    <!-- Front Card Header Accent Line -->
+    <rect x="224" y="184" width="84" height="10" rx="5" fill="#38bdf8" fill-opacity="0.8"/>
+    <rect x="224" y="208" width="128" height="6" rx="3" fill="#1e293b"/>
+    <rect x="224" y="224" width="96" height="6" rx="3" fill="#1e293b"/>
+  </g>
+
+  <!-- Central Sync Bridge / Connected Infinity Link -->
+  <g filter="url(#neonGlow)">
+    <!-- Left Capsule Loop (Source) -->
+    <path d="M 232 292 C 208 292 192 276 192 254 C 192 232 208 216 232 216 L 254 216 C 262 216 268 222 268 230 C 268 238 262 244 254 244 L 232 244 C 224 244 218 248 218 254 C 218 260 224 264 232 264 L 254 264 C 262 264 268 270 268 278 C 268 286 262 292 254 292 Z" fill="url(#syncGrad)"/>
+
+    <!-- Right Capsule Loop (Clone) -->
+    <path d="M 280 216 C 304 216 320 232 320 254 C 320 276 304 292 280 292 L 258 292 C 250 292 244 286 244 278 C 244 270 250 264 258 264 L 280 264 C 288 264 294 260 294 254 C 294 248 288 244 280 244 L 258 244 C 250 244 244 238 244 230 C 244 222 250 216 258 216 Z" fill="url(#syncGrad)"/>
+
+    <!-- Central Data Pulse Link -->
+    <rect x="240" y="248" width="32" height="12" rx="6" fill="#38bdf8"/>
+    <circle cx="218" cy="254" r="5" fill="#ffffff"/>
+    <circle cx="294" cy="254" r="5" fill="#ffffff"/>
+  </g>
+</svg>

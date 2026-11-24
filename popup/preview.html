@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="zinc">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SessionClone</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-logo" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="5" width="8" height="14" rx="4"></rect>
+            <rect x="14" y="5" width="8" height="14" rx="4"></rect>
+            <line x1="6" y1="12" x2="18" y2="12" stroke-dasharray="2 2"></line>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-name">SessionClone</span>
+          <div id="domainBadge" class="domain-pill" title="Active tab domain">
+            <span class="status-dot"></span>
+            <span id="activeDomainText" class="domain-text">Detecting...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="quickCloneBtn" class="btn btn-secondary btn-header" title="Copy the full session (cookies + storage) to the clipboard" aria-label="Clone session to clipboard">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span>Clone</span>
+        </button>
+        <button id="quickPasteBtn" class="btn btn-primary btn-header" title="Paste &amp; inject a session from the clipboard" aria-label="Quick paste session">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+          <span>Paste</span>
+        </button>
+        <button id="openFullTabBtn" class="btn-icon" title="Open the full interface in a browser tab" aria-label="Open full view in a new tab">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+        </button>
+        <button id="refreshTabBtn" class="btn-icon" title="Reload active tab" aria-label="Reload the active tab">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+        </button>
+        <button id="wipeSessionBtn" class="btn-icon btn-icon-danger" title="Purge all site data (cookies, storage, IndexedDB, caches &amp; workers)" aria-label="Purge all data for this site">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Segmented Navigation Tab Bar -->
+    <nav class="nav-segment-bar" role="tablist" aria-label="Sections">
+      <button class="nav-segment-tab active" data-tab="cookiesTab" role="tab" aria-selected="true" aria-controls="cookiesTab" id="tab-cookies">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"></path><circle cx="8.5" cy="8.5" r="1"></circle><circle cx="7.5" cy="15.5" r="1"></circle><circle cx="12" cy="18" r="1"></circle><circle cx="16" cy="13" r="1"></circle></svg>
+        <span>Cookies</span>
+        <span id="cookiesCountBadge" class="count-badge">0</span>
+      </button>
+
+      <button class="nav-segment-tab" data-tab="localTab" role="tab" aria-selected="false" aria-controls="localTab" id="tab-local">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+        <span>LocalStorage</span>
+        <span id="localCountBadge" class="count-badge">0</span>
+      </button>
+
+      <button class="nav-segment-tab" data-tab="sessionTab" role="tab" aria-selected="false" aria-controls="sessionTab" id="tab-session">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        <span>Session</span>
+        <span id="sessionCountBadge" class="count-badge">0</span>
+      </button>
+
+      <button class="nav-segment-tab" data-tab="portTab" role="tab" aria-selected="false" aria-controls="portTab" id="tab-port">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <span>Port</span>
+      </button>
+
+      <button class="nav-segment-tab" data-tab="vaultTab" role="tab" aria-selected="false" aria-controls="vaultTab" id="tab-vault">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        <span>Vault</span>
+        <span id="vaultCountBadge" class="count-badge">0</span>
+      </button>
+
+      <button class="nav-segment-tab" data-tab="settingsTab" role="tab" aria-selected="false" aria-controls="settingsTab" id="tab-settings">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="main-content">
+      <!-- Restricted Internal Page Notice -->
+      <div id="restrictedAlert" class="restricted-notice hidden" role="status">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="notice-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <div class="notice-body">
+          <span class="notice-title">Internal Browser Context</span>
+          <span class="notice-desc">Cookies &amp; web storage are not accessible on internal browser URLs. Navigate to a standard website to manage sessions.</span>
+        </div>
+      </div>
+
+      <!-- TAB 1: COOKIES -->
+      <section id="cookiesTab" class="tab-panel active" role="tabpanel" aria-labelledby="tab-cookies" tabindex="0">
+        <div class="panel-toolbar">
+          <div class="search-input-wrapper">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="cookieSearchInput" placeholder="Filter cookies..." autocomplete="off" aria-label="Filter cookies">
+            <button id="clearCookieSearchBtn" class="clear-input-btn hidden" aria-label="Clear cookie filter">✕</button>
+          </div>
+          <div class="toolbar-actions">
+            <button id="addCookieBtn" class="btn btn-primary btn-sm" title="Add Cookie" aria-label="Add cookie">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add</span>
+            </button>
+            <button id="copyAllCookiesBtn" class="btn btn-secondary btn-sm" title="Copy all as HTTP header" aria-label="Copy all cookies as HTTP header">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy</span>
+            </button>
+            <button id="clearAllCookiesBtn" class="btn btn-ghost-danger btn-sm" title="Delete all site cookies" aria-label="Delete all cookies for this site">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="cookiesListContainer" class="items-list custom-scrollbar">
+          <div class="empty-state">
+            <span class="empty-title">No cookies found</span>
+            <span class="empty-desc">This site has not stored any HTTP cookies.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: LOCALSTORAGE -->
+      <section id="localTab" class="tab-panel" role="tabpanel" aria-labelledby="tab-local" tabindex="0">
+        <div class="panel-toolbar">
+          <div class="search-input-wrapper">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="localSearchInput" placeholder="Filter localStorage..." autocomplete="off" aria-label="Filter localStorage keys">
+            <button id="clearLocalSearchBtn" class="clear-input-btn hidden" aria-label="Clear localStorage filter">✕</button>
+          </div>
+          <div class="toolbar-actions">
+            <button id="addLocalBtn" class="btn btn-primary btn-sm" title="Add key/value" aria-label="Add localStorage key">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add</span>
+            </button>
+            <button id="copyAllLocalBtn" class="btn btn-secondary btn-sm" title="Copy all as JSON" aria-label="Copy all localStorage as JSON">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy</span>
+            </button>
+            <button id="clearAllLocalBtn" class="btn btn-ghost-danger btn-sm" title="Clear all localStorage" aria-label="Clear all localStorage">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="localListContainer" class="items-list custom-scrollbar">
+          <div class="empty-state">
+            <span class="empty-title">No LocalStorage items</span>
+            <span class="empty-desc">No keys are stored in localStorage for this origin.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: SESSIONSTORAGE -->
+      <section id="sessionTab" class="tab-panel" role="tabpanel" aria-labelledby="tab-session" tabindex="0">
+        <div class="panel-toolbar">
+          <div class="search-input-wrapper">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="sessionSearchInput" placeholder="Filter sessionStorage..." autocomplete="off" aria-label="Filter sessionStorage keys">
+            <button id="clearSessionSearchBtn" class="clear-input-btn hidden" aria-label="Clear sessionStorage filter">✕</button>
+          </div>
+          <div class="toolbar-actions">
+            <button id="addSessionBtn" class="btn btn-primary btn-sm" title="Add key/value" aria-label="Add sessionStorage key">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add</span>
+            </button>
+            <button id="copyAllSessionBtn" class="btn btn-secondary btn-sm" title="Copy all as JSON" aria-label="Copy all sessionStorage as JSON">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy</span>
+            </button>
+            <button id="clearAllSessionBtn" class="btn btn-ghost-danger btn-sm" title="Clear all sessionStorage" aria-label="Clear all sessionStorage">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="sessionListContainer" class="items-list custom-scrollbar">
+          <div class="empty-state">
+            <span class="empty-title">No SessionStorage items</span>
+            <span class="empty-desc">No keys are stored in sessionStorage for this tab.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: IMPORT / EXPORT (PORT) -->
+      <section id="portTab" class="tab-panel" role="tabpanel" aria-labelledby="tab-port" tabindex="0">
+        <div class="subnav-toggle" role="tablist" aria-label="Port mode">
+          <button id="exportModeBtn" class="subnav-btn active" role="tab" aria-selected="true">Export</button>
+          <button id="importModeBtn" class="subnav-btn" role="tab" aria-selected="false">Import / Paste</button>
+        </div>
+
+        <!-- EXPORT VIEW -->
+        <div id="exportViewSection" class="port-content custom-scrollbar">
+          <div class="section-group">
+            <span class="section-label" id="exportFormatLabel">Export Format</span>
+            <div class="format-card-list" role="radiogroup" aria-labelledby="exportFormatLabel">
+              <label class="format-option active">
+                <input type="radio" name="exportFormat" value="bundle" checked>
+                <div class="format-details">
+                  <div class="format-header-row">
+                    <span class="format-title">Universal Bundle</span>
+                    <span class="format-tag">All-In-One</span>
+                  </div>
+                  <span class="format-caption">Complete snapshot (Cookies + LocalStorage + SessionStorage)</span>
+                </div>
+              </label>
+
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="cookie_editor">
+                <div class="format-details">
+                  <div class="format-header-row">
+                    <span class="format-title">Cookie-Editor &amp; EditThisCookie</span>
+                    <span class="format-tag tag-neutral">JSON Array</span>
+                  </div>
+                  <span class="format-caption">Compatible with Cookie-Editor, EditThisCookie and Quick Cookie Manager</span>
+                </div>
+              </label>
+
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="netscape">
+                <div class="format-details">
+                  <div class="format-header-row">
+                    <span class="format-title">Netscape / curl</span>
+                    <span class="format-tag tag-neutral">cookies.txt</span>
+                  </div>
+                  <span class="format-caption">Standard 7-column format for curl, wget, python and CLI tools</span>
+                </div>
+              </label>
+
+              <label class="format-option">
+                <input type="radio" name="exportFormat" value="header">
+                <div class="format-details">
+                  <div class="format-header-row">
+                    <span class="format-title">HTTP Cookie Header</span>
+                    <span class="format-tag tag-neutral">Header String</span>
+                  </div>
+                  <span class="format-caption">Raw <code>Cookie: name=value</code> string for HTTP requests</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Optional Encryption (advanced, off by default) -->
+          <div class="security-panel">
+            <label class="switch-row">
+              <div class="switch-label-group">
+                <span class="switch-title">Password-protect this export <span class="opt-badge">Optional</span></span>
+                <span class="switch-desc">AES-256-GCM with PBKDF2 key derivation - off by default</span>
+              </div>
+              <input type="checkbox" id="enableEncryptionCheckbox" class="toggle-checkbox">
+            </label>
+
+            <div id="encryptionPasswordFields" class="security-input-row hidden">
+              <div class="input-with-action">
+                <input type="password" id="exportPasswordInput" placeholder="Set export password..." autocomplete="new-password" aria-label="Export password">
+                <button type="button" id="toggleExportPasswordBtn" class="action-btn-inline" aria-label="Show or hide export password" aria-pressed="false">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <button id="copyExportBtn" class="btn btn-primary btn-flex">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy Export</span>
+            </button>
+            <button id="downloadExportBtn" class="btn btn-secondary btn-flex">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>Download File</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- IMPORT VIEW -->
+        <div id="importViewSection" class="port-content custom-scrollbar hidden">
+          <div class="import-panel" id="importDropzone">
+            <div class="import-header">
+              <span class="section-label">Universal Importer</span>
+              <span id="detectedFormatBadge" class="detected-badge hidden">Auto-Detected</span>
+            </div>
+            <textarea id="importTextarea" class="code-textarea custom-scrollbar" placeholder="Paste a SessionClone bundle, Cookie-Editor JSON, EditThisCookie, Netscape cookies.txt, Cookie header or an encrypted string here..." rows="6" aria-label="Session data to import"></textarea>
+
+            <div class="file-upload-bar">
+              <button type="button" id="pasteFromClipboardBtn" class="btn btn-secondary btn-sm">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                <span>Paste from Clipboard</span>
+              </button>
+              <label for="importFileInput" class="file-label">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>Or choose file</span>
+              </label>
+              <input type="file" id="importFileInput" accept=".json,.txt" class="hidden-file-input" tabindex="-1" aria-hidden="true">
+            </div>
+          </div>
+
+          <!-- Options -->
+          <div class="checkbox-options-card">
+            <label class="custom-checkbox-row">
+              <input type="checkbox" id="clearBeforeImportCheckbox" checked>
+              <span class="checkbox-label">Wipe existing domain session before import (clean switch)</span>
+            </label>
+            <p class="option-hint">Reload behaviour after importing is configured in Settings.</p>
+          </div>
+
+          <button id="executeImportBtn" class="btn btn-primary btn-block">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span>Inject &amp; Port Session</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- TAB 5: MULTI-ACCOUNT VAULT -->
+      <section id="vaultTab" class="tab-panel" role="tabpanel" aria-labelledby="tab-vault" tabindex="0">
+        <div class="vault-create-box">
+          <span class="create-box-title">Save Active Session as Profile</span>
+          <div class="create-form-row">
+            <input type="text" id="newProfileNameInput" placeholder="Profile name (e.g. Work, Admin, Staging)..." maxlength="32" aria-label="Profile name">
+            <button id="saveProfileBtn" class="btn btn-primary btn-sm">Save</button>
+          </div>
+          <div class="color-picker-row">
+            <span class="picker-label" id="colorPickerLabel">Color Tag:</span>
+            <div class="color-dot-group" id="profileColorDots" role="group" aria-labelledby="colorPickerLabel">
+              <button type="button" class="c-dot active" data-color="indigo" style="--bg: #6366f1;" aria-label="Indigo tag" aria-pressed="true"></button>
+              <button type="button" class="c-dot" data-color="cyan" style="--bg: #0ea5e9;" aria-label="Cyan tag" aria-pressed="false"></button>
+              <button type="button" class="c-dot" data-color="emerald" style="--bg: #10b981;" aria-label="Emerald tag" aria-pressed="false"></button>
+              <button type="button" class="c-dot" data-color="amber" style="--bg: #f59e0b;" aria-label="Amber tag" aria-pressed="false"></button>
+              <button type="button" class="c-dot" data-color="rose" style="--bg: #f43f5e;" aria-label="Rose tag" aria-pressed="false"></button>
+              <button type="button" class="c-dot" data-color="zinc" style="--bg: #71717a;" aria-label="Zinc tag" aria-pressed="false"></button>
+            </div>
+          </div>
+          <p class="option-hint">Profiles are stored in this browser only. They are not encrypted at rest and never leave your device.</p>
+        </div>
+
+        <div class="panel-toolbar">
+          <div class="search-input-wrapper">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="vaultSearchInput" placeholder="Filter profiles..." autocomplete="off" aria-label="Filter profiles">
+          </div>
+          <label class="chip-filter">
+            <input type="checkbox" id="vaultDomainOnlyCheckbox" checked>
+            <span>Active Domain Only</span>
+          </label>
+        </div>
+
+        <div id="vaultProfilesContainer" class="items-list custom-scrollbar">
+          <div class="empty-state">
+            <span class="empty-title">Vault is empty</span>
+            <span class="empty-desc">Save your active session above to switch between accounts with 1 click.</span>
+          </div>
+        </div>
+
+        <div class="vault-backup-row">
+          <button id="vaultBackupExportBtn" class="btn btn-secondary btn-sm" title="Download all profiles as a JSON backup">Backup Vault</button>
+          <button id="vaultBackupImportBtn" class="btn btn-secondary btn-sm" title="Restore profiles from a backup file">Restore Backup</button>
+          <input type="file" id="vaultBackupFileInput" accept=".json" class="hidden-file-input" tabindex="-1" aria-hidden="true">
+        </div>
+      </section>
+
+      <!-- TAB 6: SETTINGS & THEMES -->
+      <section id="settingsTab" class="tab-panel" role="tabpanel" aria-labelledby="tab-settings" tabindex="0">
+        <div class="port-content custom-scrollbar">
+          <!-- Theme Selection -->
+          <div class="section-group">
+            <span class="section-label" id="themeLabel">Interface Theme</span>
+            <div class="theme-grid" role="radiogroup" aria-labelledby="themeLabel">
+              <label class="theme-card active" data-theme-val="zinc">
+                <input type="radio" name="appTheme" value="zinc" checked>
+                <div class="theme-preview-box preview-zinc">
+                  <div class="theme-bar"></div>
+                  <div class="theme-dot"></div>
+                </div>
+                <span class="theme-name">Zinc Dark</span>
+              </label>
+
+              <label class="theme-card" data-theme-val="black">
+                <input type="radio" name="appTheme" value="black">
+                <div class="theme-preview-box preview-black">
+                  <div class="theme-bar"></div>
+                  <div class="theme-dot"></div>
+                </div>
+                <span class="theme-name">Pitch Black</span>
+              </label>
+
+              <label class="theme-card" data-theme-val="midnight">
+                <input type="radio" name="appTheme" value="midnight">
+                <div class="theme-preview-box preview-midnight">
+                  <div class="theme-bar"></div>
+                  <div class="theme-dot"></div>
+                </div>
+                <span class="theme-name">Midnight</span>
+              </label>
+
+              <label class="theme-card" data-theme-val="light">
+                <input type="radio" name="appTheme" value="light">
+                <div class="theme-preview-box preview-light">
+                  <div class="theme-bar"></div>
+                  <div class="theme-dot"></div>
+                </div>
+                <span class="theme-name">Clean Light</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Reload Behaviour -->
+          <div class="section-group">
+            <span class="section-label" id="reloadLabel">After Import / Switch / Purge</span>
+            <div class="settings-card" role="group" aria-labelledby="reloadLabel">
+              <label class="form-field">
+                <span class="field-label">Reload the active tab</span>
+                <select id="refreshModeSelect" class="field-select">
+                  <option value="countdown">Countdown (ask before reloading)</option>
+                  <option value="instant">Instantly</option>
+                  <option value="never">Never - I will reload myself</option>
+                </select>
+              </label>
+              <label class="form-field" id="refreshDelayWrap">
+                <span class="field-label">Countdown seconds (1-30)</span>
+                <input type="number" id="refreshDelayInput" class="field-input" min="1" max="30" step="1" value="5">
+              </label>
+            </div>
+          </div>
+
+          <!-- Behavior Preferences -->
+          <div class="section-group">
+            <span class="section-label">Behaviour Preferences</span>
+            <div class="checkbox-options-card">
+              <label class="custom-checkbox-row">
+                <input type="checkbox" id="settingWipeBeforeImport" checked>
+                <span class="checkbox-label">Clean wipe session before paste/import</span>
+              </label>
+              <label class="custom-checkbox-row">
+                <input type="checkbox" id="settingDeepPurge" checked>
+                <span class="checkbox-label">Deep purge (IndexedDB, caches &amp; service workers)</span>
+              </label>
+              <label class="custom-checkbox-row">
+                <input type="checkbox" id="settingBlurValues">
+                <span class="checkbox-label">Hide cookie &amp; storage values until I click them</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Permissions -->
+          <div class="section-group">
+            <span class="section-label">Browser Permissions</span>
+            <div class="permissions-status-card">
+              <p class="perm-explain">SessionClone requests these permissions when you install it:</p>
+              <div class="perm-row">
+                <span class="perm-name">Read &amp; change cookies</span>
+                <span class="tag tag-green">Required</span>
+              </div>
+              <div class="perm-row">
+                <span class="perm-name">Read &amp; change site storage on all websites</span>
+                <span class="tag tag-green">Required</span>
+              </div>
+              <div class="perm-row">
+                <span class="perm-name">Read the clipboard (only when you click Paste)</span>
+                <span class="tag tag-amber">On request</span>
+              </div>
+              <p class="option-hint">No browsing history is collected and no data is sent to any server.</p>
+            </div>
+          </div>
+
+          <!-- About & Support -->
+          <div class="section-group">
+            <span class="section-label">About &amp; Support</span>
+            <div class="settings-card about-card">
+              <div class="about-row">
+                <span class="about-key">Version</span>
+                <span id="aboutVersion" class="about-val font-mono">v1.0.0</span>
+              </div>
+              <div class="about-row">
+                <span class="about-key">Privacy Policy</span>
+                <!-- Replace this href with your hosted PRIVACY.md URL before publishing -->
+                <a id="privacyPolicyLink" class="about-link" href="https://github.com/" target="_blank" rel="noopener noreferrer">Read policy</a>
+              </div>
+              <div class="about-row">
+                <span class="about-key">Support</span>
+                <span class="about-links">
+                  <a class="about-link" href="https://dub.sh/cha" target="_blank" rel="noopener noreferrer">Message me</a>
+                  <a class="about-link" href="https://dub.sh/mrsheikh" target="_blank" rel="noopener noreferrer">Telegram</a>
+                </span>
+              </div>
+              <p class="credit-line">Made with <span class="heart" aria-hidden="true">❤</span> by <strong>Bangabandhu Sheikh Mujibur Rahman</strong></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer Stats Bar -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span id="footerTotalSummary">0 Cookies • 0 Storage Items</span>
+      </div>
+      <div class="footer-credit" title="SessionClone">
+        Made with <span class="heart" aria-hidden="true">❤</span> by <strong>Bangabandhu Sheikh Mujibur Rahman</strong>
+      </div>
+      <div class="footer-right">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span id="footerStatus">Ready</span>
+      </div>
+    </footer>
+
+    <!-- MODAL: AUTO-RELOAD COUNTDOWN -->
+    <div id="reloadModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="reloadModalTitle">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-header">
+          <h2 id="reloadModalTitle" class="modal-title">Session Ported</h2>
+        </div>
+        <div class="modal-content">
+          <p id="reloadContextText" class="dialog-text">Session ported successfully.</p>
+          <p class="dialog-text">Target: <strong id="reloadTargetDomain">this site</strong></p>
+          <div class="countdown-ring" aria-live="polite">
+            <span id="countdownValue">5</span>
+          </div>
+          <p class="countdown-note">Auto-reload will execute in <span id="countdownSecs">5</span> seconds.</p>
+        </div>
+        <div class="modal-footer">
+          <button id="countdownCancelBtn" class="btn btn-secondary btn-sm">Cancel</button>
+          <button id="countdownReloadBtn" class="btn btn-primary btn-sm">Reload Now</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: QUICK PASTE & INJECT -->
+    <div id="quickPasteModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="quickPasteTitle">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h2 id="quickPasteTitle" class="modal-title">Quick Paste &amp; Inject Session</h2>
+          <button class="modal-close" data-close-modal="quickPasteModal" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-content custom-scrollbar">
+          <p class="dialog-text">Paste any session bundle, Cookie-Editor JSON, Netscape cookies.txt or header string to port into the active tab:</p>
+          <textarea id="modalQuickPasteTextarea" class="code-textarea font-mono" rows="6" placeholder="Paste session content here..." aria-label="Session content to paste"></textarea>
+          <div class="detected-row">
+            <span class="section-label">Format:</span>
+            <span id="quickPasteDetectedBadge" class="detected-badge">✨ Auto-Detecting</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" data-close-modal="quickPasteModal">Cancel</button>
+          <button id="modalQuickPasteInjectBtn" class="btn btn-primary btn-sm">Inject &amp; Switch</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT COOKIE -->
+    <div id="cookieModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cookieModalTitle">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h2 id="cookieModalTitle" class="modal-title">Edit Cookie</h2>
+          <button class="modal-close" data-close-modal="cookieModal" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-content custom-scrollbar">
+          <div class="form-field">
+            <label for="modalCookieName" class="field-label">Name <span class="req">*</span></label>
+            <input type="text" id="modalCookieName" class="field-input font-mono" placeholder="cookie_name" required>
+          </div>
+          <div class="form-field">
+            <label for="modalCookieValue" class="field-label">Value</label>
+            <textarea id="modalCookieValue" class="field-textarea font-mono" rows="3" placeholder="cookie_value"></textarea>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label for="modalCookieDomain" class="field-label">Domain</label>
+              <input type="text" id="modalCookieDomain" class="field-input font-mono" placeholder=".example.com">
+            </div>
+            <div class="form-field">
+              <label for="modalCookiePath" class="field-label">Path</label>
+              <input type="text" id="modalCookiePath" class="field-input font-mono" placeholder="/" value="/">
+            </div>
+          </div>
+          <div class="form-grid-2">
+            <div class="form-field">
+              <label for="modalCookieSameSite" class="field-label">SameSite</label>
+              <select id="modalCookieSameSite" class="field-select">
+                <option value="unspecified">Unspecified</option>
+                <option value="lax">Lax</option>
+                <option value="strict">Strict</option>
+                <option value="no_restriction">No Restriction (None)</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="modalCookieExpiration" class="field-label">Expiration</label>
+              <input type="datetime-local" id="modalCookieExpiration" class="field-input">
+            </div>
+          </div>
+          <div class="checkbox-grid">
+            <label class="custom-checkbox-row">
+              <input type="checkbox" id="modalCookieSession">
+              <span class="checkbox-label">Session Only</span>
+            </label>
+            <label class="custom-checkbox-row">
+              <input type="checkbox" id="modalCookieSecure">
+              <span class="checkbox-label">Secure</span>
+            </label>
+            <label class="custom-checkbox-row">
+              <input type="checkbox" id="modalCookieHttpOnly">
+              <span class="checkbox-label">HttpOnly</span>
+            </label>
+            <label class="custom-checkbox-row">
+              <input type="checkbox" id="modalCookieHostOnly">
+              <span class="checkbox-label">HostOnly</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" data-close-modal="cookieModal">Cancel</button>
+          <button id="modalCookieSaveBtn" class="btn btn-primary btn-sm">Save Cookie</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT STORAGE ITEM -->
+    <div id="storageModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="storageModalTitle">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h2 id="storageModalTitle" class="modal-title">Edit Storage Key</h2>
+          <button class="modal-close" data-close-modal="storageModal" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-content custom-scrollbar">
+          <div class="form-field">
+            <label for="modalStorageKey" class="field-label">Key Name <span class="req">*</span></label>
+            <input type="text" id="modalStorageKey" class="field-input font-mono" placeholder="storage_key" required>
+          </div>
+          <div class="form-field">
+            <div class="field-label-split">
+              <label for="modalStorageValue" class="field-label">Value</label>
+              <button type="button" id="formatModalJsonBtn" class="btn-link">Format JSON</button>
+            </div>
+            <textarea id="modalStorageValue" class="field-textarea font-mono" rows="6" placeholder="storage_value"></textarea>
+          </div>
+          <input type="hidden" id="modalStorageType" value="localStorage">
+          <input type="hidden" id="modalStorageOriginalKey" value="">
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" data-close-modal="storageModal">Cancel</button>
+          <button id="modalStorageSaveBtn" class="btn btn-primary btn-sm">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: JWT INSPECTOR -->
+    <div id="jwtModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="jwtModalTitle">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <div class="modal-title-with-pill">
+            <h2 id="jwtModalTitle" class="modal-title">JWT Claims Inspector</h2>
+            <span id="jwtStatusBadge" class="jwt-pill active">Active</span>
+          </div>
+          <button class="modal-close" data-close-modal="jwtModal" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-content custom-scrollbar">
+          <div class="jwt-meta-table">
+            <div class="meta-row">
+              <span class="meta-k">Issued (iat):</span>
+              <span id="jwtIatDisplay" class="meta-v font-mono">-</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-k">Expires (exp):</span>
+              <span id="jwtExpDisplay" class="meta-v font-mono">-</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-k">Algorithm:</span>
+              <span id="jwtAlgDisplay" class="meta-v font-mono">-</span>
+            </div>
+          </div>
+
+          <div class="code-box-group">
+            <div class="code-box-header">
+              <span class="code-box-title">Header</span>
+              <button id="copyJwtHeaderBtn" class="btn-micro">Copy</button>
+            </div>
+            <pre id="jwtHeaderPre" class="code-display custom-scrollbar"></pre>
+          </div>
+
+          <div class="code-box-group">
+            <div class="code-box-header">
+              <span class="code-box-title">Payload (Decoded Claims)</span>
+              <button id="copyJwtPayloadBtn" class="btn-micro">Copy</button>
+            </div>
+            <pre id="jwtPayloadPre" class="code-display custom-scrollbar"></pre>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" data-close-modal="jwtModal">Close</button>
+          <button id="copyRawJwtBtn" class="btn btn-primary btn-sm">Copy Raw Token</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: DECRYPTION PASSWORD -->
+    <div id="decryptModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="decryptModalTitle">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-header">
+          <h2 id="decryptModalTitle" class="modal-title">Encrypted Session</h2>
+          <button class="modal-close" data-close-modal="decryptModal" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-content">
+          <p class="dialog-text">This session bundle is password-protected with AES-256. Enter the password to decrypt and port it:</p>
+          <div class="form-field">
+            <label for="decryptPasswordInput" class="field-label">Password</label>
+            <div class="input-with-action">
+              <input type="password" id="decryptPasswordInput" class="field-input" placeholder="Password..." autocomplete="current-password">
+              <button type="button" id="toggleDecryptPasswordBtn" class="action-btn-inline" aria-label="Show or hide password" aria-pressed="false">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" data-close-modal="decryptModal">Cancel</button>
+          <button id="executeDecryptBtn" class="btn btn-primary btn-sm">Decrypt &amp; Import</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CONFIRM ACTION -->
+    <div id="confirmModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-header">
+          <h2 id="confirmModalTitle" class="modal-title">Confirm Action</h2>
+          <button class="modal-close" data-close-modal="confirmModal" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-content">
+          <p id="confirmModalMessage" class="dialog-text">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirmCancelBtn" class="btn btn-secondary btn-sm" data-close-modal="confirmModal">Cancel</button>
+          <button id="confirmProceedBtn" class="btn btn-danger btn-sm">Proceed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-stack" aria-live="polite" aria-atomic="false"></div>
+  </div>
+
+  <script src="../dev/mock-chrome.js"></script>
+  <script src="../scripts/crypto.js"></script>
+  <script src="../scripts/cookie-utils.js"></script>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
