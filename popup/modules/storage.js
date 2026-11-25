@@ -50,6 +50,7 @@ export async function fetchStorage() {
     renderLocalStorageList();
     renderSessionStorageList();
   } catch (err) {
+    console.warn('[SessionClone] Error fetching storage:', err);
     state.localStorageData = {};
     state.sessionStorageData = {};
     renderLocalStorageList();

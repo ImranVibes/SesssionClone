@@ -37,13 +37,16 @@ async function resolveTargetTab() {
   // 2. The currently active tab in this window (or last focused window)
   try {
     let [tab] = await browserAPI.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !isInjectable(tab.url)) {
-      const [lastFocused] = await browserAPI.tabs.query({ active: true, lastFocusedWindow: true });
-      if (lastFocused && isInjectable(lastFocused.url)) {
-        tab = lastFocused;
-      }
-    }
     if (tab && isInjectable(tab.url)) return tab;
+
+    const [lastFocused] = await browserAPI.tabs.query({ active: true, lastFocusedWindow: true });
+    if (lastFocused && isInjectable(lastFocused.url)) return lastFocused;
+
+    const activeTabs = await browserAPI.tabs.query({ active: true });
+    if (Array.isArray(activeTabs)) {
+      const valid = activeTabs.find(t => isInjectable(t.url));
+      if (valid) return valid;
+    }
   } catch (e) {}
 
   // 3. Fall back to the last tab we worked on (avoids targeting ourselves)

@@ -115,6 +115,10 @@
       sanitized.storeId = rawCookie.storeId;
     }
 
+    if (rawCookie.partitionKey) {
+      sanitized.partitionKey = rawCookie.partitionKey;
+    }
+
     return sanitized;
   }
 
@@ -548,6 +552,47 @@
     return `${(size / (1024 * 1024)).toFixed(2)} MB`;
   }
 
+  /**
+   * Test whether a cookie's domain matches a host (direct or parent-domain match)
+   */
+  function isCookieMatchingHost(cookieDomain, tabHost) {
+    if (!cookieDomain || !tabHost) return false;
+    const cDomain = cookieDomain.toLowerCase().replace(/^\./, '').trim();
+    const tHost = tabHost.toLowerCase().trim();
+
+    if (tHost === cDomain) return true;
+    if (tHost.endsWith('.' + cDomain)) {
+      return cDomain.includes('.');
+    }
+    if (cDomain.endsWith('.' + tHost)) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Generates hierarchical domain candidates for cookie querying
+   * e.g. "developer.microsoft.com" -> ["developer.microsoft.com", ".developer.microsoft.com", "microsoft.com", ".microsoft.com"]
+   */
+  function getDomainCandidates(hostname) {
+    if (!hostname) return [];
+    const clean = hostname.toLowerCase().replace(/^\./, '').trim();
+    const parts = clean.split('.');
+    const domains = [];
+
+    if (parts.length <= 1 || /^\d+\.\d+\.\d+\.\d+$/.test(clean)) {
+      return [clean, '.' + clean];
+    }
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      const d = parts.slice(i).join('.');
+      domains.push(d);
+      domains.push('.' + d);
+    }
+
+    return domains;
+  }
+
   const CookieUtils = {
     getCookieUrl,
     sanitizeCookieForSet,
@@ -560,7 +605,9 @@
     parseUniversalPayload,
     detectFormat,
     getCookieSize,
-    getStorageItemSize
+    getStorageItemSize,
+    isCookieMatchingHost,
+    getDomainCandidates
   };
 
   if (typeof module !== 'undefined' && module.exports) {

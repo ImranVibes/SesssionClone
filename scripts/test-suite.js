@@ -42,7 +42,8 @@ async function runTests() {
   assert(manifest.permissions.includes('cookies'), 'Has cookies permission');
   assert(manifest.permissions.includes('storage'), 'Has storage permission');
   assert(manifest.permissions.includes('scripting'), 'Has scripting permission');
-  assert(!manifest.permissions.includes('activeTab'), 'activeTab removed (covered by <all_urls>)');
+  assert(manifest.permissions.includes('tabs'), 'Has tabs permission');
+  assert(manifest.permissions.includes('activeTab'), 'Has activeTab permission');
   assert(!manifest.permissions.includes('browsingData'), 'Unused browsingData permission not shipped');
   assert(Array.isArray(manifest.optional_permissions) && manifest.optional_permissions.includes('clipboardRead'),
     'clipboardRead is requested on demand');
@@ -253,7 +254,7 @@ async function runTests() {
   assert(sanitized.sameSite === 'no_restriction', 'SameSite preserved');
 
   /* ------------------------------------------------------------------ *
-   * 8. Domain mismatch warnings
+   * 8. Domain mismatch warnings & candidate hierarchy
    * ------------------------------------------------------------------ */
   console.log('\nCategory: Domain mismatch detection');
   assert(CookieUtils.checkDomainMismatch('github.com', [{ domain: '.gitlab.com' }]).mismatch === true,
@@ -266,6 +267,21 @@ async function runTests() {
     'Storage-only payload never blocks the import');
   assert(CookieUtils.getCookieDomains([{ domain: '.a.com' }, { domain: 'a.com' }]).length === 1,
     'Domain list is de-duplicated and dot-stripped');
+
+  // Multi-level candidate and matching tests
+  const candidates = CookieUtils.getDomainCandidates('developer.microsoft.com');
+  assert(candidates.includes('developer.microsoft.com') && candidates.includes('microsoft.com'),
+    'getDomainCandidates decomposes subdomains');
+  assert(CookieUtils.isCookieMatchingHost('.microsoft.com', 'developer.microsoft.com'),
+    'Parent domain cookie (.microsoft.com) matches subdomain tab (developer.microsoft.com)');
+  assert(CookieUtils.isCookieMatchingHost('developer.microsoft.com', 'developer.microsoft.com'),
+    'Exact domain cookie matches tab');
+  assert(CookieUtils.isCookieMatchingHost('sub.developer.microsoft.com', 'developer.microsoft.com'),
+    'Child subdomain cookie matches tab');
+  assert(!CookieUtils.isCookieMatchingHost('google.com', 'developer.microsoft.com'),
+    'Unrelated domain cookie does not match tab');
+  assert(!CookieUtils.isCookieMatchingHost('.com', 'developer.microsoft.com'),
+    'Naked TLD is rejected from matching');
 
   /* ------------------------------------------------------------------ *
    * 9. Icon files

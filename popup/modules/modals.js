@@ -14,7 +14,10 @@ import { ensureTargetReady } from './tab.js';
    COOKIE MODAL
    ========================================================================== */
 
+let currentEditingCookie = null;
+
 export function openCookieModal(cookie = null) {
+  currentEditingCookie = cookie;
   if (cookie) {
     dom.cookieModalTitle.textContent = 'Edit Cookie';
     dom.modalCookieName.value = cookie.name || '';
@@ -84,14 +87,27 @@ export async function saveCookieFromModal() {
     }
   }
 
-  const storeId = (state.activeTab && state.activeTab.cookieStoreId) || undefined;
+  const storeId = (currentEditingCookie && currentEditingCookie.storeId) || (state.activeTab && state.activeTab.cookieStoreId) || undefined;
   const cookieObj = { name, value, domain, path, sameSite, secure, httpOnly, hostOnly, session: isSession, expirationDate, storeId };
+  if (currentEditingCookie && currentEditingCookie.partitionKey) {
+    cookieObj.partitionKey = currentEditingCookie.partitionKey;
+  }
 
   try {
     const sanitized = CookieUtils.sanitizeCookieForSet(cookieObj, state.activeTab.url);
-    await browserAPI.cookies.set(sanitized);
+    try {
+      await browserAPI.cookies.set(sanitized);
+    } catch (err) {
+      if (sanitized.partitionKey) {
+        delete sanitized.partitionKey;
+        await browserAPI.cookies.set(sanitized);
+      } else {
+        throw err;
+      }
+    }
     showToast(`Saved "${name}"`, 'success');
     closeModal(dom.cookieModal);
+    currentEditingCookie = null;
     await refresh();
   } catch (err) {
     showToast('Failed to save cookie: ' + err.message, 'error');

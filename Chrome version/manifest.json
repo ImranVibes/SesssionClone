@@ -6,7 +6,9 @@
   "permissions": [
     "cookies",
     "storage",
-    "scripting"
+    "scripting",
+    "tabs",
+    "activeTab"
   ],
   "optional_permissions": [
     "clipboardRead"

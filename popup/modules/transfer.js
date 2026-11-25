@@ -195,7 +195,20 @@ export async function wipeCurrentDomainCookies() {
       const storeId = c.storeId || (state.activeTab && state.activeTab.cookieStoreId) || undefined;
       const removeDetails = { url, name: c.name };
       if (storeId) removeDetails.storeId = storeId;
-      const removed = await browserAPI.cookies.remove(removeDetails);
+      if (c.partitionKey) removeDetails.partitionKey = c.partitionKey;
+      let removed = null;
+      try {
+        removed = await browserAPI.cookies.remove(removeDetails);
+      } catch (e) {
+        if (removeDetails.partitionKey) {
+          delete removeDetails.partitionKey;
+          try { removed = await browserAPI.cookies.remove(removeDetails); } catch (e2) {}
+        }
+        if (!removed && removeDetails.storeId) {
+          delete removeDetails.storeId;
+          try { removed = await browserAPI.cookies.remove(removeDetails); } catch (e3) {}
+        }
+      }
       if (!removed) throw new Error(`could not remove ${c.name}`);
     },
     'cookie wipe'
@@ -210,7 +223,23 @@ async function injectCookieList(cookies) {
       if (!sanitized.storeId && state.activeTab && state.activeTab.cookieStoreId) {
         sanitized.storeId = state.activeTab.cookieStoreId;
       }
-      const set = await browserAPI.cookies.set(sanitized);
+      let set = null;
+      try {
+        set = await browserAPI.cookies.set(sanitized);
+      } catch (e) {
+        if (sanitized.partitionKey) {
+          const fallback = { ...sanitized };
+          delete fallback.partitionKey;
+          try { set = await browserAPI.cookies.set(fallback); } catch (e2) {}
+        }
+        if (!set && sanitized.storeId) {
+          const fallback = { ...sanitized };
+          delete fallback.storeId;
+          delete fallback.partitionKey;
+          try { set = await browserAPI.cookies.set(fallback); } catch (e3) {}
+        }
+        if (!set) throw e;
+      }
       if (!set) throw new Error(`rejected: ${c.name}`);
     },
     'cookie import'

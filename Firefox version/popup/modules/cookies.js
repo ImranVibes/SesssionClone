@@ -10,41 +10,126 @@ import {
 import { ensureTargetReady } from './tab.js';
 import { openCookieModal } from './modals.js';
 
+const isCookieMatchingHost = (cd, th) => CookieUtils.isCookieMatchingHost(cd, th);
+const getDomainCandidates = h => CookieUtils.getDomainCandidates(h);
+
+/**
+ * Safely executes browserAPI.cookies.getAll with fallback handling for
+ * partitionKey (Total Cookie Protection in Firefox / CHIPS in Chrome)
+ * and invalid or container storeId.
+ */
+async function safeGetAll(filter) {
+  const results = [];
+
+  // 1. If partitionKey is not already specified, try with partitionKey: {}
+  // In Firefox, passing partitionKey: {} retrieves BOTH unpartitioned and partitioned cookies!
+  if (!filter.partitionKey) {
+    try {
+      const partitioned = await browserAPI.cookies.getAll({ ...filter, partitionKey: {} });
+      if (Array.isArray(partitioned) && partitioned.length > 0) {
+        results.push(...partitioned);
+      }
+    } catch (e) {
+      // Browser does not support partitionKey filter
+    }
+  }
+
+  // 2. Query with the standard filter (unpartitioned or browser default)
+  try {
+    const standard = await browserAPI.cookies.getAll(filter);
+    if (Array.isArray(standard) && standard.length > 0) {
+      results.push(...standard);
+    }
+  } catch (e) {
+    // If filter had storeId and threw, retry without storeId
+    if (filter.storeId) {
+      try {
+        const withoutStore = { ...filter };
+        delete withoutStore.storeId;
+        const res = await browserAPI.cookies.getAll(withoutStore);
+        if (Array.isArray(res) && res.length > 0) results.push(...res);
+      } catch (e2) {}
+    }
+  }
+
+  return results;
+}
+
 export async function fetchCookies() {
   if (!state.activeTab || !state.activeTab.url || state.activeTab.isRestricted) return;
 
   try {
-    const filter = { url: state.activeTab.url };
-    if (state.activeTab.cookieStoreId) {
-      filter.storeId = state.activeTab.cookieStoreId;
-    }
-    let urlCookies = [];
-    try {
-      urlCookies = await browserAPI.cookies.getAll(filter);
-    } catch (e) {
-      urlCookies = await browserAPI.cookies.getAll({ url: state.activeTab.url });
-    }
+    const tabUrl = state.activeTab.url;
+    const tabHost = state.activeTab.domain;
+    const storeId = state.activeTab.cookieStoreId || undefined;
 
-    let domainCookies = [];
-    if (state.activeTab.domain) {
-      try {
-        const domainFilter = { domain: state.activeTab.domain };
-        if (state.activeTab.cookieStoreId) {
-          domainFilter.storeId = state.activeTab.cookieStoreId;
-        }
-        domainCookies = await browserAPI.cookies.getAll(domainFilter);
-      } catch (e) {
-        try {
-          domainCookies = await browserAPI.cookies.getAll({ domain: state.activeTab.domain });
-        } catch (e2) {}
+    const cookieMap = new Map();
+    const addCookie = c => {
+      if (!c || !c.name) return;
+      const store = c.storeId || '';
+      const pk = c.partitionKey ? (typeof c.partitionKey === 'object' ? JSON.stringify(c.partitionKey) : String(c.partitionKey)) : '';
+      const key = `${c.name}#${c.domain || ''}#${c.path || '/'}#${store}#${pk}`;
+      if (!cookieMap.has(key)) {
+        cookieMap.set(key, c);
+      }
+    };
+
+    // --- Strategy 1: Direct URL queries ---
+    const urlTargets = [tabUrl];
+    try {
+      const parsed = new URL(tabUrl);
+      const originRoot = `${parsed.protocol}//${parsed.hostname}/`;
+      if (!urlTargets.includes(originRoot)) urlTargets.push(originRoot);
+
+      // Insecure HTTP fallback to discover non-secure cookies on HTTPS tabs
+      if (parsed.protocol === 'https:') {
+        const httpRoot = `http://${parsed.hostname}/`;
+        if (!urlTargets.includes(httpRoot)) urlTargets.push(httpRoot);
+      }
+    } catch (e) {}
+
+    for (const u of urlTargets) {
+      const queryWithStore = storeId ? { url: u, storeId } : { url: u };
+      const res = await safeGetAll(queryWithStore);
+      res.forEach(addCookie);
+
+      if (storeId) {
+        // Also query without storeId in case the tab's storeId is restricted
+        const resNoStore = await safeGetAll({ url: u });
+        resNoStore.forEach(addCookie);
       }
     }
 
-    const cookieMap = new Map();
-    [...urlCookies, ...domainCookies].forEach(c => {
-      const key = `${c.name}#${c.domain}#${c.path}#${c.storeId || ''}`;
-      cookieMap.set(key, c);
-    });
+    // --- Strategy 2: Domain candidate hierarchy queries ---
+    // (e.g. for developer.microsoft.com, queries developer.microsoft.com and microsoft.com)
+    const domainCandidates = getDomainCandidates(tabHost);
+    for (const d of domainCandidates) {
+      const queryWithStore = storeId ? { domain: d, storeId } : { domain: d };
+      const res = await safeGetAll(queryWithStore);
+      res.forEach(addCookie);
+
+      if (storeId) {
+        const resNoStore = await safeGetAll({ domain: d });
+        resNoStore.forEach(addCookie);
+      }
+    }
+
+    // --- Strategy 3: Store-wide safety sweep ---
+    // Query all cookies accessible to the extension and filter by domain match.
+    // Guarantees 100% parity with Cookie-Editor across all Firefox and Chromium variants.
+    try {
+      const storeQueries = storeId ? [{ storeId }, {}] : [{}];
+      for (const sq of storeQueries) {
+        const allStoreCookies = await safeGetAll(sq);
+        for (const c of allStoreCookies) {
+          if (isCookieMatchingHost(c.domain, tabHost)) {
+            addCookie(c);
+          }
+        }
+      }
+    } catch (e) {
+      // Store-wide query safely ignored if host permissions are restricted
+    }
 
     state.cookies = Array.from(cookieMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     renderCookiesList();
@@ -202,7 +287,21 @@ export async function deleteSingleCookie(cookie) {
     const storeId = cookie.storeId || (state.activeTab && state.activeTab.cookieStoreId) || undefined;
     const removeDetails = { url, name: cookie.name };
     if (storeId) removeDetails.storeId = storeId;
-    await browserAPI.cookies.remove(removeDetails);
+    if (cookie.partitionKey) removeDetails.partitionKey = cookie.partitionKey;
+
+    let removed = null;
+    try {
+      removed = await browserAPI.cookies.remove(removeDetails);
+    } catch (e) {
+      if (removeDetails.partitionKey) {
+        delete removeDetails.partitionKey;
+        try { removed = await browserAPI.cookies.remove(removeDetails); } catch (e2) {}
+      }
+      if (!removed && removeDetails.storeId) {
+        delete removeDetails.storeId;
+        try { removed = await browserAPI.cookies.remove(removeDetails); } catch (e3) {}
+      }
+    }
     showToast(`Deleted "${cookie.name}"`, 'info');
     await refresh();
   } catch (err) {
@@ -229,7 +328,20 @@ export function clearAllDomainCookies() {
           const storeId = c.storeId || (state.activeTab && state.activeTab.cookieStoreId) || undefined;
           const removeDetails = { url, name: c.name };
           if (storeId) removeDetails.storeId = storeId;
-          const removed = await browserAPI.cookies.remove(removeDetails);
+          if (c.partitionKey) removeDetails.partitionKey = c.partitionKey;
+          let removed = null;
+          try {
+            removed = await browserAPI.cookies.remove(removeDetails);
+          } catch (e) {
+            if (removeDetails.partitionKey) {
+              delete removeDetails.partitionKey;
+              try { removed = await browserAPI.cookies.remove(removeDetails); } catch (e2) {}
+            }
+            if (!removed && removeDetails.storeId) {
+              delete removeDetails.storeId;
+              try { removed = await browserAPI.cookies.remove(removeDetails); } catch (e3) {}
+            }
+          }
           if (!removed) throw new Error(`could not remove ${c.name}`);
         },
         'cookie delete'

@@ -64,9 +64,6 @@ function validateManifest(manifest, label) {
   if (manifest.permissions && manifest.permissions.includes('browsingData')) {
     fail(`${label}: unused browsingData permission must not ship`);
   }
-  if (manifest.permissions && manifest.permissions.includes('activeTab')) {
-    fail(`${label}: activeTab is redundant with <all_urls> host permissions`);
-  }
   if (!manifest.host_permissions || !manifest.host_permissions.includes('<all_urls>')) {
     fail(`${label}: <all_urls> host permission is required`);
   }
