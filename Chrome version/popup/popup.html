@@ -70,7 +70,7 @@
 
       <button class="nav-segment-tab" data-tab="portTab" role="tab" aria-selected="false" aria-controls="portTab" id="tab-port">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-        <span>Port</span>
+        <span>Import/Export</span>
       </button>
 
       <button class="nav-segment-tab" data-tab="vaultTab" role="tab" aria-selected="false" aria-controls="vaultTab" id="tab-vault">
@@ -191,7 +191,7 @@
 
       <!-- TAB 4: IMPORT / EXPORT (PORT) -->
       <section id="portTab" class="tab-panel" role="tabpanel" aria-labelledby="tab-port" tabindex="0">
-        <div class="subnav-toggle" role="tablist" aria-label="Port mode">
+        <div class="subnav-toggle" role="tablist" aria-label="Import and Export mode">
           <button id="exportModeBtn" class="subnav-btn active" role="tab" aria-selected="true">Export</button>
           <button id="importModeBtn" class="subnav-btn" role="tab" aria-selected="false">Import / Paste</button>
         </div>
@@ -536,10 +536,10 @@
     <div id="reloadModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="reloadModalTitle">
       <div class="modal-dialog modal-sm">
         <div class="modal-header">
-          <h2 id="reloadModalTitle" class="modal-title">Session Ported</h2>
+          <h2 id="reloadModalTitle" class="modal-title">Session Imported</h2>
         </div>
         <div class="modal-content">
-          <p id="reloadContextText" class="dialog-text">Session ported successfully.</p>
+          <p id="reloadContextText" class="dialog-text">Session imported successfully.</p>
           <p class="dialog-text">Target: <strong id="reloadTargetDomain">this site</strong></p>
           <div class="countdown-ring" aria-live="polite">
             <span id="countdownValue">5</span>
@@ -561,7 +561,7 @@
           <button class="modal-close" data-close-modal="quickPasteModal" aria-label="Close">✕</button>
         </div>
         <div class="modal-content custom-scrollbar">
-          <p class="dialog-text">Paste any session bundle, Cookie-Editor JSON, Netscape cookies.txt or header string to port into the active tab:</p>
+          <p class="dialog-text">Paste any session bundle, Cookie-Editor JSON, Netscape cookies.txt or header string to import into the active tab:</p>
           <textarea id="modalQuickPasteTextarea" class="code-textarea font-mono" rows="6" placeholder="Paste session content here..." aria-label="Session content to paste"></textarea>
           <div class="detected-row">
             <span class="section-label">Format:</span>
@@ -728,7 +728,7 @@
           <button class="modal-close" data-close-modal="decryptModal" aria-label="Close">✕</button>
         </div>
         <div class="modal-content">
-          <p class="dialog-text">This session bundle is password-protected with AES-256. Enter the password to decrypt and port it:</p>
+          <p class="dialog-text">This session bundle is password-protected with AES-256. Enter the password to decrypt and import it:</p>
           <div class="form-field">
             <label for="decryptPasswordInput" class="field-label">Password</label>
             <div class="input-with-action">

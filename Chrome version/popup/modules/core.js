@@ -485,7 +485,7 @@ export function requestAutoReload(context) {
   }
   if (dom.reloadContextText) {
     const labels = {
-      import: 'Session ported successfully.',
+      import: 'Session imported successfully.',
       profile: 'Profile switched.',
       purge: 'Site data erased.'
     };
