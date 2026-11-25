@@ -149,6 +149,22 @@ export function cacheDomElements() {
   dom.permCoreBadge = g('permCoreBadge');
   dom.permCoreBtn = g('permCoreBtn');
 
+  // Permission assistance & banner
+  dom.missingPermBanner = g('missingPermBanner');
+  dom.bannerFixPermBtn = g('bannerFixPermBtn');
+  dom.permissionsModal = g('permissionsModal');
+  dom.detectedBrowserPill = g('detectedBrowserPill');
+  dom.permTabFirefox = g('permTabFirefox');
+  dom.permTabChrome = g('permTabChrome');
+  dom.permTabEdge = g('permTabEdge');
+  dom.permGuideFirefox = g('permGuideFirefox');
+  dom.permGuideChrome = g('permGuideChrome');
+  dom.permGuideEdge = g('permGuideEdge');
+  dom.permManagerUrlInput = g('permManagerUrlInput');
+  dom.copyPermUrlBtn = g('copyPermUrlBtn');
+  dom.openExtManagerBtn = g('openExtManagerBtn');
+  dom.recheckPermsModalBtn = g('recheckPermsModalBtn');
+
   // Modals
   dom.privacyModal = g('privacyModal');
   dom.quickPasteModal = g('quickPasteModal');

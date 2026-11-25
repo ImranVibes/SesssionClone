@@ -3,7 +3,7 @@
  * All preferences persist in chrome.storage.local under one key.
  */
 
-import { browserAPI, state, dom, showToast, openModal, closeModal } from './core.js';
+import { browserAPI, state, dom, showToast, openModal, closeModal, copyTextToClipboard, refresh } from './core.js';
 
 const SETTINGS_KEY = 'sessionclone_settings';
 
@@ -81,6 +81,55 @@ export function syncSettingsControls() {
   }
 }
 
+export function detectBrowserType() {
+  const ua = (navigator.userAgent || '').toLowerCase();
+  if (ua.includes('edg/')) return 'edge';
+  if (ua.includes('firefox') || ua.includes('gecko/') || (typeof browser !== 'undefined' && browser.runtime && !ua.includes('chrome'))) return 'firefox';
+  return 'chrome';
+}
+
+export function getManagerUrlForBrowser(browserType) {
+  if (browserType === 'firefox') return 'about:addons';
+  if (browserType === 'edge') return 'edge://extensions/';
+  return 'chrome://extensions/';
+}
+
+export function switchPermBrowserTab(type) {
+  const isFf = type === 'firefox';
+  const isEdge = type === 'edge';
+  const isChrome = type === 'chrome';
+
+  if (dom.permTabFirefox) {
+    dom.permTabFirefox.classList.toggle('active', isFf);
+    dom.permTabFirefox.setAttribute('aria-selected', String(isFf));
+  }
+  if (dom.permTabChrome) {
+    dom.permTabChrome.classList.toggle('active', isChrome);
+    dom.permTabChrome.setAttribute('aria-selected', String(isChrome));
+  }
+  if (dom.permTabEdge) {
+    dom.permTabEdge.classList.toggle('active', isEdge);
+    dom.permTabEdge.setAttribute('aria-selected', String(isEdge));
+  }
+
+  if (dom.permGuideFirefox) dom.permGuideFirefox.classList.toggle('hidden', !isFf);
+  if (dom.permGuideChrome) dom.permGuideChrome.classList.toggle('hidden', !isChrome);
+  if (dom.permGuideEdge) dom.permGuideEdge.classList.toggle('hidden', !isEdge);
+
+  const url = getManagerUrlForBrowser(type);
+  if (dom.permManagerUrlInput) dom.permManagerUrlInput.value = url;
+}
+
+export function openPermissionsModal() {
+  const bType = detectBrowserType();
+  if (dom.detectedBrowserPill) {
+    const labels = { firefox: 'Firefox / Floorp', edge: 'Microsoft Edge', chrome: 'Google Chrome' };
+    dom.detectedBrowserPill.textContent = labels[bType] || 'Browser Add-ons';
+  }
+  switchPermBrowserTab(bType);
+  openModal(dom.permissionsModal);
+}
+
 export async function updatePermissionsStatus() {
   if (!browserAPI || !browserAPI.permissions) return;
 
@@ -92,8 +141,11 @@ export async function updatePermissionsStatus() {
       dom.permHostBadge.className = `tag ${hasHost ? 'tag-green' : 'tag-rose'}`;
     }
     if (dom.permHostBtn) {
-      dom.permHostBtn.textContent = hasHost ? 'Re-check' : 'Grant';
+      dom.permHostBtn.textContent = hasHost ? 'Active' : 'Fix';
       dom.permHostBtn.className = `btn ${hasHost ? 'btn-secondary' : 'btn-primary'} btn-micro`;
+    }
+    if (dom.missingPermBanner) {
+      dom.missingPermBanner.classList.toggle('hidden', Boolean(hasHost));
     }
   } catch (e) {}
 
@@ -195,6 +247,77 @@ export function bindSettingsEvents({ onRefreshChanged }) {
     });
   }
 
+  // Missing permission banner action
+  if (dom.bannerFixPermBtn) {
+    dom.bannerFixPermBtn.addEventListener('click', () => {
+      openPermissionsModal();
+    });
+  }
+
+  // Permission assistance modal tabs and actions
+  if (dom.permTabFirefox) {
+    dom.permTabFirefox.addEventListener('click', () => switchPermBrowserTab('firefox'));
+  }
+  if (dom.permTabChrome) {
+    dom.permTabChrome.addEventListener('click', () => switchPermBrowserTab('chrome'));
+  }
+  if (dom.permTabEdge) {
+    dom.permTabEdge.addEventListener('click', () => switchPermBrowserTab('edge'));
+  }
+
+  if (dom.copyPermUrlBtn) {
+    dom.copyPermUrlBtn.addEventListener('click', () => {
+      const url = (dom.permManagerUrlInput && dom.permManagerUrlInput.value) || 'about:addons';
+      copyTextToClipboard(url, `Copied "${url}"`);
+    });
+  }
+
+  if (dom.openExtManagerBtn) {
+    dom.openExtManagerBtn.addEventListener('click', async () => {
+      const url = (dom.permManagerUrlInput && dom.permManagerUrlInput.value) || 'about:addons';
+      let opened = false;
+      try {
+        if (browserAPI && browserAPI.tabs && browserAPI.tabs.create) {
+          await browserAPI.tabs.create({ url });
+          opened = true;
+        }
+      } catch (e) {}
+
+      if (!opened) {
+        try {
+          if (browserAPI && browserAPI.runtime && browserAPI.runtime.openOptionsPage) {
+            await browserAPI.runtime.openOptionsPage();
+            opened = true;
+          }
+        } catch (e) {}
+      }
+
+      if (!opened) {
+        await copyTextToClipboard(url, `Copied "${url}" — paste into a new browser tab`);
+      } else {
+        showToast(`Opening ${url}...`, 'info');
+      }
+    });
+  }
+
+  if (dom.recheckPermsModalBtn) {
+    dom.recheckPermsModalBtn.addEventListener('click', async () => {
+      try {
+        const has = await browserAPI.permissions.contains({ origins: ['<all_urls>'] });
+        if (has) {
+          showToast('Website access is now active!', 'success');
+          closeModal(dom.permissionsModal);
+          await updatePermissionsStatus();
+          await refresh();
+        } else {
+          showToast('Access is still disabled. Turn ON "Access your data for all websites" in settings.', 'warning');
+        }
+      } catch (err) {
+        showToast('Error checking permissions: ' + (err.message || ''), 'error');
+      }
+    });
+  }
+
   if (dom.permHostBtn) {
     dom.permHostBtn.addEventListener('click', async () => {
       try {
@@ -204,15 +327,10 @@ export function bindSettingsEvents({ onRefreshChanged }) {
           await updatePermissionsStatus();
           return;
         }
-        const granted = await browserAPI.permissions.request({ origins: ['<all_urls>'] });
-        if (granted) {
-          showToast('All websites permission granted!', 'success');
-        } else {
-          showToast('Permission request was denied.', 'warning');
-        }
-        await updatePermissionsStatus();
+        // If not granted, open the dedicated visual guide modal
+        openPermissionsModal();
       } catch (err) {
-        showToast('Permission check: ' + (err.message || ''), 'info');
+        openPermissionsModal();
       }
     });
   }

@@ -117,9 +117,27 @@ function renderStorageContainer(container, dataObj, type, filterQuery, emptyMsg)
     title.textContent = keys.length === 0 ? 'Empty Storage' : 'No matching items';
     const desc = document.createElement('span');
     desc.className = 'empty-desc';
-    desc.textContent = keys.length === 0 ? emptyMsg : 'Try adjusting your search filter.';
+
+    const isPermMissing = dom.missingPermBanner && !dom.missingPermBanner.classList.contains('hidden');
+    if (keys.length === 0 && isPermMissing) {
+      desc.textContent = 'Website permission is disabled in your browser settings.';
+    } else {
+      desc.textContent = keys.length === 0 ? emptyMsg : 'Try adjusting your search filter.';
+    }
     emptyState.appendChild(title);
     emptyState.appendChild(desc);
+
+    if (keys.length === 0 && isPermMissing) {
+      const fixBtn = document.createElement('button');
+      fixBtn.className = 'btn btn-primary btn-micro';
+      fixBtn.style.marginTop = '8px';
+      fixBtn.textContent = 'Enable Website Access';
+      fixBtn.addEventListener('click', () => {
+        if (dom.bannerFixPermBtn) dom.bannerFixPermBtn.click();
+      });
+      emptyState.appendChild(fixBtn);
+    }
+
     container.appendChild(emptyState);
     return;
   }

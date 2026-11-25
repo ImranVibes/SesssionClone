@@ -87,6 +87,16 @@
 
     <!-- Main Content Panels -->
     <main class="main-content">
+      <!-- Missing Website Permission Alert Banner -->
+      <div id="missingPermBanner" class="perm-missing-banner hidden" role="alert">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="banner-icon" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <div class="banner-content">
+          <span class="banner-title">Website Access Missing</span>
+          <span class="banner-sub">Turn on "Access your data for all websites" to load cookies &amp; storage.</span>
+        </div>
+        <button id="bannerFixPermBtn" class="btn btn-primary btn-micro" type="button">Fix Now</button>
+      </div>
+
       <!-- Restricted Internal Page Notice -->
       <div id="restrictedAlert" class="restricted-notice hidden" role="status">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="notice-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
@@ -736,6 +746,92 @@
         <div class="modal-footer">
           <button id="confirmCancelBtn" class="btn btn-secondary btn-sm" data-close-modal="confirmModal">Cancel</button>
           <button id="confirmProceedBtn" class="btn btn-danger btn-sm">Proceed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERMISSIONS ASSISTANCE MODAL -->
+    <div id="permissionsModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="permissionsModalTitle">
+      <div class="modal-dialog modal-md">
+        <div class="modal-header">
+          <div class="modal-title-with-pill">
+            <h2 id="permissionsModalTitle" class="modal-title">Enable Website Access</h2>
+            <span id="detectedBrowserPill" class="jwt-pill active">Firefox / Floorp</span>
+          </div>
+          <button class="modal-close" data-close-modal="permissionsModal" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-content custom-scrollbar" style="max-height: 420px; overflow-y: auto;">
+          <div class="perm-modal-highlight">
+            <div class="perm-modal-icon-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <div>
+              <strong class="perm-modal-head">Permission Required</strong>
+              <p class="perm-modal-desc">In Manifest V3, Firefox and privacy browsers require website access to be turned on in your browser's Add-on settings.</p>
+            </div>
+          </div>
+
+          <div class="perm-mock-toggle-box">
+            <span class="perm-mock-label">Setting to enable in your browser:</span>
+            <div class="perm-mock-row">
+              <div class="perm-mock-switch active" aria-hidden="true">
+                <span class="perm-mock-knob"></span>
+              </div>
+              <div class="perm-mock-text">
+                <span class="perm-mock-name">Access your data for all websites</span>
+                <span class="perm-mock-sub">Required to inspect &amp; restore cookies &amp; storage</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Browser tabs selector -->
+          <div class="perm-browser-tabs" role="tablist" aria-label="Browser instructions">
+            <button type="button" id="permTabFirefox" class="perm-tab-btn active" role="tab" aria-selected="true">Firefox / Floorp</button>
+            <button type="button" id="permTabChrome" class="perm-tab-btn" role="tab" aria-selected="false">Chrome</button>
+            <button type="button" id="permTabEdge" class="perm-tab-btn" role="tab" aria-selected="false">Edge</button>
+          </div>
+
+          <!-- Instruction: Firefox / Floorp -->
+          <div id="permGuideFirefox" class="perm-guide-section">
+            <ol class="perm-steps-list">
+              <li>Open <strong class="font-mono text-accent">about:addons</strong> (or right-click SessionClone icon &rarr; <em>Manage Extension</em>).</li>
+              <li>Click on <strong>SessionClone</strong>, then select the <strong>Permissions</strong> (or <em>Permissions and data</em>) tab.</li>
+              <li>Toggle <strong>ON</strong> the switch for <strong class="text-accent">"Access your data for all websites"</strong>.</li>
+            </ol>
+          </div>
+
+          <!-- Instruction: Chrome -->
+          <div id="permGuideChrome" class="perm-guide-section hidden">
+            <ol class="perm-steps-list">
+              <li>Open <strong class="font-mono text-accent">chrome://extensions/</strong> in your address bar.</li>
+              <li>Click <strong>Details</strong> on SessionClone.</li>
+              <li>Under <strong>Site access</strong>, select <strong class="text-accent">"On all sites"</strong>.</li>
+            </ol>
+          </div>
+
+          <!-- Instruction: Edge -->
+          <div id="permGuideEdge" class="perm-guide-section hidden">
+            <ol class="perm-steps-list">
+              <li>Open <strong class="font-mono text-accent">edge://extensions/</strong> in your address bar.</li>
+              <li>Click <strong>Details</strong> on SessionClone.</li>
+              <li>Under <strong>Site permissions</strong>, enable access for all sites.</li>
+            </ol>
+          </div>
+
+          <div class="perm-quick-url-box">
+            <span class="perm-url-label">Direct settings URL:</span>
+            <div class="perm-url-row">
+              <input type="text" id="permManagerUrlInput" readonly class="font-mono form-input perm-url-field" value="about:addons" aria-label="Extension Manager URL" />
+              <button type="button" id="copyPermUrlBtn" class="btn btn-secondary btn-micro" title="Copy URL">Copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <button type="button" id="openExtManagerBtn" class="btn btn-secondary btn-sm">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            Open Settings
+          </button>
+          <button type="button" id="recheckPermsModalBtn" class="btn btn-primary btn-sm">I've Enabled It &bull; Re-check</button>
         </div>
       </div>
     </div>
