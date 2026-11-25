@@ -61,7 +61,7 @@ function valueMask() {
 export function renderCookiesList() {
   const container = dom.cookiesListContainer;
   if (!container) return;
-  container.innerHTML = '';
+  container.textContent = '';
 
   const blur = Boolean(state.settings.blurValues);
   const filter = state.filters.cookies.toLowerCase().trim();
@@ -75,12 +75,17 @@ export function renderCookiesList() {
   });
 
   if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-title">${state.cookies.length === 0 ? 'No cookies found' : 'No matching cookies'}</span>
-        <span class="empty-desc">${state.cookies.length === 0 ? 'This site has not stored any HTTP cookies.' : 'Try adjusting your search filter.'}</span>
-      </div>
-    `;
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+    const title = document.createElement('span');
+    title.className = 'empty-title';
+    title.textContent = state.cookies.length === 0 ? 'No cookies found' : 'No matching cookies';
+    const desc = document.createElement('span');
+    desc.className = 'empty-desc';
+    desc.textContent = state.cookies.length === 0 ? 'This site has not stored any HTTP cookies.' : 'Try adjusting your search filter.';
+    emptyState.appendChild(title);
+    emptyState.appendChild(desc);
+    container.appendChild(emptyState);
     return;
   }
 
@@ -149,15 +154,23 @@ export function renderCookiesList() {
     // Metadata tags
     const tags = document.createElement('div');
     tags.className = 'meta-tags';
-    tags.innerHTML = `
-      <span class="tag" title="Domain">${escapeHtml(cookie.domain || '')}</span>
-      <span class="tag" title="Path">${escapeHtml(cookie.path || '/')}</span>
-      ${cookie.httpOnly ? '<span class="tag tag-highlight" title="HttpOnly">httpOnly</span>' : ''}
-      ${cookie.secure ? '<span class="tag tag-highlight" title="Secure">secure</span>' : ''}
-      ${cookie.sameSite && cookie.sameSite !== 'unspecified' ? `<span class="tag" title="SameSite">${escapeHtml(cookie.sameSite)}</span>` : ''}
-      <span class="tag ${cookie.session ? 'tag-green' : (isExp ? 'tag-rose' : 'tag-amber')}" title="Expiration">${escapeHtml(expText)}</span>
-      <span class="tag" title="Size">${sizeStr}</span>
-    `;
+
+    const addTag = (text, title, extraClass = '') => {
+      const span = document.createElement('span');
+      span.className = 'tag' + (extraClass ? ` ${extraClass}` : '');
+      if (title) span.title = title;
+      span.textContent = text;
+      tags.appendChild(span);
+    };
+
+    addTag(cookie.domain || '', 'Domain');
+    addTag(cookie.path || '/', 'Path');
+    if (cookie.httpOnly) addTag('httpOnly', 'HttpOnly', 'tag-highlight');
+    if (cookie.secure) addTag('secure', 'Secure', 'tag-highlight');
+    if (cookie.sameSite && cookie.sameSite !== 'unspecified') addTag(cookie.sameSite, 'SameSite');
+    addTag(expText, 'Expiration', cookie.session ? 'tag-green' : (isExp ? 'tag-rose' : 'tag-amber'));
+    addTag(sizeStr, 'Size');
+
     row.appendChild(tags);
 
     // Value preview (optionally masked until revealed)

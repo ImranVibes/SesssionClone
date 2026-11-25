@@ -92,7 +92,7 @@ function formatStoragePreview(valStr, sizeStr, isExpanded, isMasked) {
 
 function renderStorageContainer(container, dataObj, type, filterQuery, emptyMsg) {
   if (!container) return;
-  container.innerHTML = '';
+  container.textContent = '';
 
   const blur = Boolean(state.settings.blurValues);
   const filter = (filterQuery || '').toLowerCase().trim();
@@ -109,12 +109,17 @@ function renderStorageContainer(container, dataObj, type, filterQuery, emptyMsg)
   });
 
   if (filteredKeys.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-title">${keys.length === 0 ? 'Empty Storage' : 'No matching items'}</span>
-        <span class="empty-desc">${keys.length === 0 ? emptyMsg : 'Try adjusting your search filter.'}</span>
-      </div>
-    `;
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+    const title = document.createElement('span');
+    title.className = 'empty-title';
+    title.textContent = keys.length === 0 ? 'Empty Storage' : 'No matching items';
+    const desc = document.createElement('span');
+    desc.className = 'empty-desc';
+    desc.textContent = keys.length === 0 ? emptyMsg : 'Try adjusting your search filter.';
+    emptyState.appendChild(title);
+    emptyState.appendChild(desc);
+    container.appendChild(emptyState);
     return;
   }
 
@@ -199,11 +204,23 @@ function renderStorageContainer(container, dataObj, type, filterQuery, emptyMsg)
     // Tags
     const tags = document.createElement('div');
     tags.className = 'meta-tags';
-    tags.innerHTML = `
-      <span class="tag">${sizeStr}</span>
-      ${isJwt ? '<span class="tag tag-highlight">JWT Token</span>' : ''}
-      ${isJson ? '<span class="tag tag-highlight">JSON</span>' : ''}
-    `;
+    const sizeTag = document.createElement('span');
+    sizeTag.className = 'tag';
+    sizeTag.textContent = sizeStr;
+    tags.appendChild(sizeTag);
+
+    if (isJwt) {
+      const jwtTag = document.createElement('span');
+      jwtTag.className = 'tag tag-highlight';
+      jwtTag.textContent = 'JWT Token';
+      tags.appendChild(jwtTag);
+    }
+    if (isJson) {
+      const jsonTag = document.createElement('span');
+      jsonTag.className = 'tag tag-highlight';
+      jsonTag.textContent = 'JSON';
+      tags.appendChild(jsonTag);
+    }
     row.appendChild(tags);
 
     // Value preview (optionally masked until revealed)

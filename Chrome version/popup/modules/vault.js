@@ -96,7 +96,7 @@ export async function saveVaultProfile() {
 export function renderVaultProfiles() {
   const container = dom.vaultProfilesContainer;
   if (!container) return;
-  container.innerHTML = '';
+  container.textContent = '';
 
   const filter = state.filters.vault.toLowerCase().trim();
   const domainOnly = state.filters.vaultDomainOnly;
@@ -114,14 +114,19 @@ export function renderVaultProfiles() {
 
   if (filtered.length === 0) {
     const hidden = domainOnly && state.vaultProfiles.length > 0;
-    container.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-title">${hidden ? 'No profiles for this domain' : 'Vault is empty'}</span>
-        <span class="empty-desc">${hidden
-          ? 'Turn off "Active Domain Only" to see your other saved profiles.'
-          : 'Save your active session above to switch between accounts with 1 click.'}</span>
-      </div>
-    `;
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+    const title = document.createElement('span');
+    title.className = 'empty-title';
+    title.textContent = hidden ? 'No profiles for this domain' : 'Vault is empty';
+    const desc = document.createElement('span');
+    desc.className = 'empty-desc';
+    desc.textContent = hidden
+      ? 'Turn off "Active Domain Only" to see your other saved profiles.'
+      : 'Save your active session above to switch between accounts with 1 click.';
+    emptyState.appendChild(title);
+    emptyState.appendChild(desc);
+    container.appendChild(emptyState);
     return;
   }
 
@@ -146,17 +151,23 @@ export function renderVaultProfiles() {
 
     const top = document.createElement('div');
     top.className = 'profile-card-top';
-    top.innerHTML = `
-      <span class="profile-card-name">${escapeHtml(prof.name)}</span>
-      <span class="tag">${escapeHtml(prof.domain || '')}</span>
-    `;
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'profile-card-name';
+    nameSpan.textContent = prof.name;
+    const domainTag = document.createElement('span');
+    domainTag.className = 'tag';
+    domainTag.textContent = prof.domain || '';
+    top.appendChild(nameSpan);
+    top.appendChild(domainTag);
 
     const meta = document.createElement('div');
     meta.className = 'profile-card-meta';
-    meta.innerHTML = `
-      <span>${cCount} cookies • ${lCount + sCount} storage</span>
-      <span>${escapeHtml(dateStr)}</span>
-    `;
+    const countSpan = document.createElement('span');
+    countSpan.textContent = `${cCount} cookies • ${lCount + sCount} storage`;
+    const dateSpan = document.createElement('span');
+    dateSpan.textContent = dateStr;
+    meta.appendChild(countSpan);
+    meta.appendChild(dateSpan);
 
     card.appendChild(top);
     card.appendChild(meta);

@@ -71,6 +71,12 @@ function validateManifest(manifest, label) {
     fail(`${label}: <all_urls> host permission is required`);
   }
   if (!manifest.content_security_policy) fail(`${label}: explicit CSP missing`);
+  if (label === 'Firefox') {
+    const gecko = manifest.browser_specific_settings && manifest.browser_specific_settings.gecko;
+    if (!gecko || !gecko.data_collection_permissions || !Array.isArray(gecko.data_collection_permissions.required)) {
+      fail(`${label}: data_collection_permissions property is required in browser_specific_settings.gecko`);
+    }
+  }
   for (const size of [16, 32, 48, 128]) {
     if (!manifest.icons || !manifest.icons[String(size)]) fail(`${label}: missing icon ${size}`);
   }
@@ -116,7 +122,10 @@ function main() {
   firefoxManifest.browser_specific_settings = {
     gecko: {
       id: 'sessionclone@universal.extension',
-      strict_min_version: '109.0'
+      strict_min_version: '109.0',
+      data_collection_permissions: {
+        required: ['none']
+      }
     }
   };
   delete firefoxManifest.minimum_chrome_version;

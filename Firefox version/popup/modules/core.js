@@ -234,10 +234,12 @@ export function showToast(message, type = 'info') {
 
   const toast = document.createElement('div');
   toast.className = `toast-item toast-${type}`;
-  toast.innerHTML = `
-    <span class="toast-dot"></span>
-    <span>${escapeHtml(message)}</span>
-  `;
+  const dot = document.createElement('span');
+  dot.className = 'toast-dot';
+  const text = document.createElement('span');
+  text.textContent = message;
+  toast.appendChild(dot);
+  toast.appendChild(text);
 
   dom.toastContainer.appendChild(toast);
 

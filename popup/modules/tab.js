@@ -109,11 +109,18 @@ export function setRestrictedState(label) {
   setActionsEnabled(false);
 
   if (dom.cookiesListContainer) {
-    dom.cookiesListContainer.innerHTML = `
-      <div class="empty-state">
-        <span class="empty-title">Not available here</span>
-        <span class="empty-desc">Open a regular website tab to manage its session.</span>
-      </div>`;
+    dom.cookiesListContainer.textContent = '';
+    const emptyState = document.createElement('div');
+    emptyState.className = 'empty-state';
+    const title = document.createElement('span');
+    title.className = 'empty-title';
+    title.textContent = 'Not available here';
+    const desc = document.createElement('span');
+    desc.className = 'empty-desc';
+    desc.textContent = 'Open a regular website tab to manage its session.';
+    emptyState.appendChild(title);
+    emptyState.appendChild(desc);
+    dom.cookiesListContainer.appendChild(emptyState);
   }
   updateBadgeCounts();
 }

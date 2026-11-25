@@ -67,6 +67,13 @@ async function runTests() {
     const ff = JSON.parse(fs.readFileSync(path.join(firefoxDir, 'manifest.json'), 'utf8'));
     assert(ff.browser_specific_settings && ff.browser_specific_settings.gecko && ff.browser_specific_settings.gecko.id,
       'Firefox manifest carries a Gecko id');
+    assert(
+      ff.browser_specific_settings &&
+      ff.browser_specific_settings.gecko &&
+      ff.browser_specific_settings.gecko.data_collection_permissions &&
+      Array.isArray(ff.browser_specific_settings.gecko.data_collection_permissions.required) &&
+      ff.browser_specific_settings.gecko.data_collection_permissions.required.includes('none'),
+      'Firefox manifest declares data_collection_permissions: { required: ["none"] }');
     assert(ff.background && Array.isArray(ff.background.scripts) && !ff.background.service_worker,
       'Firefox manifest uses background.scripts (MV3 Firefox requirement)');
     assert(!ff.minimum_chrome_version, 'Firefox manifest drops minimum_chrome_version');
