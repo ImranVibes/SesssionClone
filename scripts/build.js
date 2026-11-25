@@ -169,15 +169,25 @@ function main() {
     return n;
   };
 
-  // --- Package Firefox version.zip for 1-click loading / store submission
+  // --- Package Chrome version.zip for 1-click store submission (Chrome & Edge)
   try {
     const { execSync } = require('child_process');
-    execSync(`tar -a -cf "${path.join(firefoxDir, 'Firefox version.zip')}" -C "${firefoxDir}" manifest.json icons popup scripts`);
+    execSync(`tar -a -cf "${path.join(chromeDir, 'Chrome version.zip')}" -C "${chromeDir}" manifest.json icons popup scripts`);
+    fs.copyFileSync(path.join(chromeDir, 'Chrome version.zip'), path.join(ROOT, 'Chrome version.zip'));
   } catch (e) {
     // If tar is unavailable, the unpacked folder is ready
   }
 
-  console.log('✔ Chrome version/  ready (' + count(chromeDir) + ' files) - zip its contents for the Chrome Web Store');
+  // --- Package Firefox version.zip for 1-click loading / store submission
+  try {
+    const { execSync } = require('child_process');
+    execSync(`tar -a -cf "${path.join(firefoxDir, 'Firefox version.zip')}" -C "${firefoxDir}" manifest.json icons popup scripts`);
+    fs.copyFileSync(path.join(firefoxDir, 'Firefox version.zip'), path.join(ROOT, 'Firefox version.zip'));
+  } catch (e) {
+    // If tar is unavailable, the unpacked folder is ready
+  }
+
+  console.log('✔ Chrome version/  ready (' + count(chromeDir) + ' files) - Chrome version.zip generated for Chrome & Edge');
   console.log('✔ Firefox version/ ready (' + count(firefoxDir) + ' files) - Firefox version.zip generated for addons.mozilla.org');
   console.log('✔ description length: ' + chromeManifest.description.length + '/' + MAX_DESCRIPTION_LENGTH);
 }
