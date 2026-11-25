@@ -1,7 +1,8 @@
 # SessionClone
 
-Clone a website session between browsers in one click. Copy cookies + site storage
-here, paste there, and you are logged in again — no email, no password.
+Clone sessions like never before. Transfer cookies, edit local storage, and backup login
+sessions with AES-256 encryption. Copy cookies + site storage here, paste there, and you
+are logged in again — no email, no password.
 
 Works as a Chrome extension (Manifest V3) and a Firefox add-on (Manifest V3).
 

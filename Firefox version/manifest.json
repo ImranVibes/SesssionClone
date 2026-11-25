@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "SessionClone - Manage Cookies & Local Storage",
   "version": "1.0.0",
-  "description": "Clone your login session between browsers in one click. Copy & paste cookies and site storage - no re-login.",
+  "description": "Clone sessions like never before. Transfer cookies, edit local storage, and backup login sessions with AES-256 encryption.",
   "permissions": [
     "cookies",
     "storage",
